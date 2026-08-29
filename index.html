@@ -10947,8 +10947,12 @@ render();
 
   function pickVoice(){
     var vs = synth.getVoices() || [];
-    voice = vs.filter(function(v){ return /pt[-_]?br/i.test(v.lang); })[0]
-         || vs.filter(function(v){ return /^pt/i.test(v.lang); })[0] || null;
+    var pt = vs.filter(function(v){ return /^pt(\b|[-_])/i.test(v.lang) || /^pt/i.test(v.lang); });
+    var br = pt.filter(function(v){ return /br/i.test(v.lang); });
+    var pool = br.length ? br : pt;
+    voice = pool.filter(function(v){ return /google/i.test(v.name); })[0]
+         || pool.filter(function(v){ return /(microsoft|maria|luciana|francisca|helo|daniel|thiago|ant[oô]nio)/i.test(v.name); })[0]
+         || pool[0] || null;
   }
   pickVoice();
   try { synth.onvoiceschanged = pickVoice; } catch(e){}
@@ -10960,33 +10964,76 @@ render();
     if (label) label.textContent = m === 'speaking' ? 'Lendo…' : (m === 'paused' ? 'Pausado' : 'Ouvir a página');
   }
 
-  function splitSentences(text){
-    var out = [];
-    text.split(/\n+/).forEach(function(line){
-      line = line.trim(); if (!line) return;
-      var pieces = line.split(/([.!?:;])\s+/), cur = '';
-      for (var i = 0; i < pieces.length; i++){
-        cur += pieces[i];
-        if (/^[.!?:;]$/.test(pieces[i])){ out.push(cur.trim()); cur = ''; }
+  // Deixa o texto "falável": remove emojis/ícones e símbolos decorativos,
+  // tira o ponto de listas numeradas ("1. item" -> "1 item") e troca
+  // ":" / ";" por vírgula, para o leitor pausar sem falar a pontuação.
+  function cleanForSpeech(text){
+    var out = '';
+    for (var i = 0; i < text.length; i++){
+      var code = text.charCodeAt(i);
+      if (code >= 0xD800 && code <= 0xDBFF){ i++; out += ' '; continue; } // emoji (par surrogate)
+      var ch = text[i];
+      if (/[0-9A-Za-zÀ-ÿ]/.test(ch)) { out += ch; continue; }
+      if (" \n\t.,;:!?%$()'\"–—-".indexOf(ch) !== -1) { out += ch; continue; }
+      out += ' ';
+    }
+    return out
+      .replace(/(^|[\s(])(\d{1,3})[.)](?=\s)/g, '$1$2')
+      .replace(/\s*[:;]\s*/g, ', ')
+      .replace(/\s*[,]{2,}\s*/g, ', ')
+      .replace(/([.!?])\1+/g, '$1')
+      .replace(/[^\S\n]+/g, ' ')
+      .replace(/\s*\n\s*/g, '\n')
+      .replace(/\n{2,}/g, '\n')
+      .trim();
+  }
+  // Extrai o texto andando pelo DOM e inserindo quebras entre blocos.
+  // (Não depende do innerText, que só traz quebras quando a página está
+  // realmente renderizada — em aba de fundo ele viria tudo grudado.)
+  function extractText(root){
+    var BLOCK = { DIV:1, P:1, LI:1, UL:1, OL:1, H1:1, H2:1, H3:1, H4:1, H5:1, TR:1, SECTION:1, ARTICLE:1, HEADER:1, TABLE:1, BLOCKQUOTE:1, BR:1 };
+    var SKIP  = { SCRIPT:1, STYLE:1, BUTTON:1, SELECT:1, TEXTAREA:1, PRE:1 };
+    var parts = [];
+    (function walk(node){
+      for (var n = node.firstChild; n; n = n.nextSibling){
+        if (n.nodeType === 3){
+          var t = n.nodeValue.replace(/\s+/g, ' ');
+          if (t.trim()) parts.push(t);
+        } else if (n.nodeType === 1){
+          if (SKIP[n.tagName]) continue;
+          if (n.classList && (n.classList.contains('code-runner') || n.classList.contains('runner-out') ||
+              n.classList.contains('runner-bar') || n.classList.contains('btn-row') ||
+              n.classList.contains('pyodide-note'))) continue;
+          var blk = BLOCK[n.tagName];
+          if (blk) parts.push('\n');
+          walk(n);
+          if (blk) parts.push('\n');
+        }
       }
-      if (cur.trim()) out.push(cur.trim());
-    });
-    return out;
+    })(root);
+    return parts.join('');
   }
   function buildQueue(){
     if (!content) return [];
-    var clone = content.cloneNode(true);
-    clone.querySelectorAll('pre, .code-runner, .runner-out, .runner-bar, button, select, textarea, script, .pyodide-note, .btn-row')
-      .forEach(function(n){ n.remove(); });
-    var text = (clone.innerText || clone.textContent || '')
-      .replace(/[^\S\n]+/g, ' ')
-      .replace(/\n[ \t]+/g, '\n').replace(/\n{2,}/g, '\n').trim();
-    var chunks = [], buf = '';
-    splitSentences(text).forEach(function(s){
-      if ((buf + ' ' + s).trim().length > 220){ if (buf) chunks.push(buf.trim()); buf = s; }
-      else { buf = (buf ? buf + ' ' : '') + s; }
+    var raw = cleanForSpeech(extractText(content));
+    var paras = raw.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+    var chunks = [];
+    function push(s){
+      s = s.replace(/\s+/g, ' ').trim();
+      if (!s || !/[0-9A-Za-zÀ-ÿ]/.test(s)) return;           // ignora "pedaços" só de pontuação
+      var prev = chunks[chunks.length - 1];
+      if (prev && (s.length < 45 || prev.length < 45)) chunks[chunks.length - 1] = (prev + ' ' + s).trim();
+      else chunks.push(s);
+    }
+    paras.forEach(function(p){
+      if (p.length <= 240){ push(p); return; }
+      var parts = p.split(/([.!?])\s+/), buf = '';
+      for (var i = 0; i < parts.length; i++){
+        buf += parts[i];
+        if (/^[.!?]$/.test(parts[i]) && buf.length >= 120){ push(buf); buf = ''; }
+      }
+      if (buf.trim()) push(buf);
     });
-    if (buf.trim()) chunks.push(buf.trim());
     return chunks;
   }
 
