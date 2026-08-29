@@ -812,6 +812,7 @@ footer.bottomnav.hidden { display: none; }
 </div>
 
 <div class="tts-bar" id="ttsBar" role="region" aria-label="Leitura em voz alta">
+  <button class="tts-btn" id="ttsBack" aria-label="Voltar cerca de 10 segundos" title="Voltar ~10 s">⏪</button>
   <button class="tts-btn tts-main" id="ttsToggle" aria-label="Ouvir a página" title="Ouvir / pausar a leitura">▶</button>
   <span class="tts-label" id="ttsLabel">Ouvir a página</span>
   <button class="tts-btn" id="ttsStop" aria-label="Parar a leitura" title="Parar">■</button>
@@ -10941,21 +10942,33 @@ render();
   var label     = document.getElementById('ttsLabel');
   var content   = document.getElementById('content');
 
-  var queue = [], idx = 0, token = 0, mode = 'idle', voice = null, lastTitle = '';
+  var backBtn   = document.getElementById('ttsBack');
+  var queue = [], idx = 0, token = 0, mode = 'idle', voice = null, voiceIsPT = false, chunkStart = 0, lastTitle = '';
 
   try { var sr = localStorage.getItem('ttsRate'); if (sr) rateSel.value = sr; } catch(e){}
 
+  function isPtVoice(v){
+    return !!v && ( /^pt(\b|[-_])/i.test(v.lang || '') ||
+                    /portug|brasil|brazil/i.test((v.name || '') + ' ' + (v.lang || '')) );
+  }
   function pickVoice(){
     var vs = synth.getVoices() || [];
-    var pt = vs.filter(function(v){ return /^pt(\b|[-_])/i.test(v.lang) || /^pt/i.test(v.lang); });
-    var br = pt.filter(function(v){ return /br/i.test(v.lang); });
+    var pt = vs.filter(isPtVoice);
+    var br = pt.filter(function(v){ return /br|brasil|brazil/i.test((v.lang || '') + (v.name || '')); });
     var pool = br.length ? br : pt;
     voice = pool.filter(function(v){ return /google/i.test(v.name); })[0]
-         || pool.filter(function(v){ return /(microsoft|maria|luciana|francisca|helo|daniel|thiago|ant[oô]nio)/i.test(v.name); })[0]
+         || pool.filter(function(v){ return v.localService; })[0]
          || pool[0] || null;
+    voiceIsPT = isPtVoice(voice);
+    if (bar) bar.title = voice
+      ? ('Voz: ' + voice.name + (voiceIsPT ? '' : ' — não é português; instale uma voz pt-BR no sistema'))
+      : 'Nenhuma voz em português encontrada — usando a voz padrão do navegador';
   }
   pickVoice();
-  try { synth.onvoiceschanged = pickVoice; } catch(e){}
+  try { synth.addEventListener('voiceschanged', pickVoice); }
+  catch(e){ try { synth.onvoiceschanged = pickVoice; } catch(e2){} }
+  setTimeout(pickVoice, 400);
+  setTimeout(pickVoice, 1500);
 
   function setMode(m){
     mode = m;
@@ -11040,12 +11053,16 @@ render();
   function speakNext(myToken){
     if (myToken !== token) return;
     if (idx >= queue.length){ stop(); return; }
-    var u = new SpeechSynthesisUtterance(queue[idx]);
-    u.lang = 'pt-BR';
-    if (voice) u.voice = voice;
+    if (!voice) pickVoice();
+    var say = queue[idx];
+    if (!voiceIsPT) say = say.replace(/\bPython\b/g, 'Paiton'); // sem voz pt-BR: evita "paifon"
+    var u = new SpeechSynthesisUtterance(say);
+    u.lang = (voice && voiceIsPT) ? voice.lang : 'pt-BR';
+    if (voice && voiceIsPT) u.voice = voice;
     u.rate = parseFloat(rateSel.value) || 1;
     u.onend = function(){ if (myToken === token){ idx++; speakNext(myToken); } };
     u.onerror = function(){ if (myToken === token){ idx++; speakNext(myToken); } };
+    chunkStart = Date.now();
     synth.speak(u);
   }
   function start(){
@@ -11056,6 +11073,13 @@ render();
   }
   function hardCancel(){ token++; try { synth.cancel(); } catch(e){} }
   function stop(){ hardCancel(); queue = []; idx = 0; keepAlive(false); setMode('idle'); }
+  // "Voltar ~10 s": se já faz alguns segundos no trecho atual, repete o
+  // trecho atual; senão, volta um trecho.
+  function back(){
+    if (!queue.length){ return; }
+    var target = ((Date.now() - chunkStart) > 4000) ? idx : Math.max(0, idx - 1);
+    hardCancel(); idx = target; keepAlive(true); setMode('speaking'); speakNext(token);
+  }
 
   var kaTimer = null;
   function keepAlive(on){
@@ -11072,11 +11096,11 @@ render();
     else if (mode === 'paused'){ synth.resume(); setMode('speaking'); }
   });
   stopBtn.addEventListener('click', stop);
+  if (backBtn) backBtn.addEventListener('click', back);
   rateSel.addEventListener('change', function(){
     try { localStorage.setItem('ttsRate', rateSel.value); } catch(e){}
     if (mode === 'speaking' || mode === 'paused'){
-      var rest = queue.slice(idx);
-      hardCancel(); queue = rest; idx = 0; token++; setMode('speaking'); speakNext(token);
+      hardCancel(); keepAlive(true); setMode('speaking'); speakNext(token);
     }
   });
   window.addEventListener('beforeunload', stop);
