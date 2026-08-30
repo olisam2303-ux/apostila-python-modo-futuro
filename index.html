@@ -755,9 +755,10 @@ footer.bottomnav.hidden { display: none; }
 /* ===== Narrador em voz alta (leitura da apostila) ===== */
 .tts-bar {
   position: fixed; right: 16px; bottom: 74px; z-index: 24;
-  display: none; align-items: center; gap: 8px;
+  display: none; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end;
+  max-width: min(94vw, 540px);
   background: var(--panel); border: 1px solid var(--border);
-  border-radius: 999px; padding: 6px 12px 6px 6px;
+  border-radius: 22px; padding: 7px 12px 7px 7px;
   box-shadow: var(--shadow, 0 6px 20px rgba(0,0,0,.18));
 }
 .tts-bar.visible { display: flex; }
@@ -765,16 +766,18 @@ footer.bottomnav.hidden { display: none; }
 .tts-btn {
   border: none; background: var(--panel-2); color: var(--text);
   width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
-  font-size: 13px; display: grid; place-items: center; line-height: 1;
+  font-size: 13px; display: grid; place-items: center; line-height: 1; flex: 0 0 auto;
 }
 .tts-btn.tts-main { background: var(--accent); color: #fff; width: 36px; height: 36px; font-size: 14px; }
 .tts-btn:hover { filter: brightness(1.08); }
 .tts-label { font-size: 12px; color: var(--text-dim); font-weight: 600; white-space: nowrap; }
-.tts-rate {
+.tts-warn { font-size: 11px; font-weight: 700; color: var(--err); cursor: help; white-space: nowrap; }
+.tts-rate, .tts-voice {
   border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
   border-radius: 8px; font-size: 12px; padding: 3px 4px; cursor: pointer;
 }
-@media (max-width: 560px) { .tts-label { display: none; } .tts-bar { right: 10px; bottom: 70px; } }
+.tts-voice { max-width: 150px; }
+@media (max-width: 560px) { .tts-label { display: none; } .tts-bar { right: 10px; bottom: 70px; max-width: calc(100vw - 20px); } .tts-voice { max-width: 118px; } }
 @media print { .tts-bar { display: none !important; } }
 </style>
 </head>
@@ -816,6 +819,10 @@ footer.bottomnav.hidden { display: none; }
   <button class="tts-btn tts-main" id="ttsToggle" aria-label="Ouvir a página" title="Ouvir / pausar a leitura">▶</button>
   <span class="tts-label" id="ttsLabel">Ouvir a página</span>
   <button class="tts-btn" id="ttsStop" aria-label="Parar a leitura" title="Parar">■</button>
+  <span class="tts-warn" id="ttsWarn" style="display:none" title="A voz atual não é em português">⚠ voz não-PT</span>
+  <select class="tts-voice" id="ttsVoice" aria-label="Voz da leitura" title="Voz da leitura">
+    <option value="">Voz automática</option>
+  </select>
   <select class="tts-rate" id="ttsRate" aria-label="Velocidade da leitura" title="Velocidade da leitura">
     <option value="0.85">0,85×</option>
     <option value="1" selected>1×</option>
@@ -10943,32 +10950,65 @@ render();
   var content   = document.getElementById('content');
 
   var backBtn   = document.getElementById('ttsBack');
+  var voiceSel  = document.getElementById('ttsVoice');
+  var warnEl    = document.getElementById('ttsWarn');
   var queue = [], idx = 0, token = 0, mode = 'idle', voice = null, voiceIsPT = false, chunkStart = 0, lastTitle = '';
 
   try { var sr = localStorage.getItem('ttsRate'); if (sr) rateSel.value = sr; } catch(e){}
+  var savedVoiceName = '';
+  try { savedVoiceName = localStorage.getItem('ttsVoice') || ''; } catch(e){}
 
   function isPtVoice(v){
     return !!v && ( /^pt(\b|[-_])/i.test(v.lang || '') ||
                     /portug|brasil|brazil/i.test((v.name || '') + ' ' + (v.lang || '')) );
   }
-  function pickVoice(){
-    var vs = synth.getVoices() || [];
-    var pt = vs.filter(isPtVoice);
+  function autoPick(list){
+    var pt = list.filter(isPtVoice);
     var br = pt.filter(function(v){ return /br|brasil|brazil/i.test((v.lang || '') + (v.name || '')); });
     var pool = br.length ? br : pt;
-    voice = pool.filter(function(v){ return /google/i.test(v.name); })[0]
-         || pool.filter(function(v){ return v.localService; })[0]
-         || pool[0] || null;
+    return pool.filter(function(v){ return /google/i.test(v.name); })[0]
+        || pool.filter(function(v){ return v.localService; })[0]
+        || pool[0] || null;
+  }
+  // Preenche o seletor de vozes, respeita a escolha salva e aponta quando
+  // não há nenhuma voz em português no sistema (aí a leitura sai em inglês).
+  function pickVoice(){
+    var vs = synth.getVoices() || [];
+    if (!vs.length) return;
+    if (voiceSel && voiceSel.options.length !== vs.length + 1){
+      var pt = vs.filter(isPtVoice), rest = vs.filter(function(v){ return !isPtVoice(v); });
+      voiceSel.innerHTML = '<option value="">Voz automática</option>' +
+        pt.concat(rest).map(function(v){
+          return '<option value="' + v.name.replace(/"/g, '&quot;') + '">' +
+                 (isPtVoice(v) ? '★ ' : '') + v.name + ' (' + v.lang + ')</option>';
+        }).join('');
+      if (savedVoiceName) voiceSel.value = savedVoiceName;
+    }
+    var chosen = savedVoiceName && vs.filter(function(v){ return v.name === savedVoiceName; })[0];
+    voice = chosen || autoPick(vs);
     voiceIsPT = isPtVoice(voice);
-    if (bar) bar.title = voice
-      ? ('Voz: ' + voice.name + (voiceIsPT ? '' : ' — não é português; instale uma voz pt-BR no sistema'))
-      : 'Nenhuma voz em português encontrada — usando a voz padrão do navegador';
+    var noPt = !vs.some(isPtVoice);
+    if (warnEl){
+      warnEl.style.display = voiceIsPT ? 'none' : 'inline';
+      warnEl.title = noPt
+        ? 'Seu sistema não tem voz em português. Instale uma voz pt-BR (no Windows: Configurações › Hora e Idioma › Idioma › Português (Brasil) › opções › Fala) e recarregue a página.'
+        : 'A voz atual não é em português. Escolha uma voz pt-BR na lista ao lado.';
+    }
+    if (bar) bar.title = voice ? ('Voz: ' + voice.name) : 'Voz padrão do navegador';
   }
   pickVoice();
   try { synth.addEventListener('voiceschanged', pickVoice); }
   catch(e){ try { synth.onvoiceschanged = pickVoice; } catch(e2){} }
-  setTimeout(pickVoice, 400);
-  setTimeout(pickVoice, 1500);
+  setTimeout(pickVoice, 300);
+  setTimeout(pickVoice, 1200);
+  setTimeout(pickVoice, 3000);
+  if (voiceSel) voiceSel.addEventListener('change', function(){
+    savedVoiceName = voiceSel.value;
+    try { savedVoiceName ? localStorage.setItem('ttsVoice', savedVoiceName)
+                         : localStorage.removeItem('ttsVoice'); } catch(e){}
+    pickVoice();
+    if (mode === 'speaking' || mode === 'paused'){ hardCancel(); keepAlive(true); setMode('speaking'); speakNext(token); }
+  });
 
   function setMode(m){
     mode = m;
