@@ -358,6 +358,16 @@ ul.plain li, ol.plain li { margin-bottom: 6px; }
 .ef-side-title { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
 .ef-side li { font-size: 12.5px; margin-bottom: 8px; line-height: 1.5; }
 .ef-arrow { text-align: center; color: var(--text-dim); font-size: 13px; margin: 2px 0; }
+.ef-ruler { margin-top: 8px; display: inline-flex; flex-direction: column; gap: 2px; }
+.ef-ruler-row { display: flex; gap: 2px; }
+.ef-rchar {
+  width: 22px; height: 22px; display: grid; place-items: center;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 4px;
+  font-family: var(--mono, "Cascadia Code", Consolas, monospace); font-size: 13px;
+  transition: background .3s, border-color .3s, color .3s;
+}
+.ef-rchar.hit { background: rgba(255,214,10,.28); border-color: #FFD60A; font-weight: 700; }
+.ef-ridx { width: 22px; text-align: center; font-size: 10px; color: var(--text-dim); font-family: var(--mono, "Cascadia Code", Consolas, monospace); }
 .ef-controls { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
 pre.diagram {
   background: var(--code-bg);
@@ -2035,10 +2045,29 @@ const MODULES = [
           { term:'fatiamento (slicing)', def:'obter um "pedaço" de uma string, indicando onde começar e onde parar', example:'texto[inicio:fim] retorna os caracteres do índice inicio até o índice fim - 1 (o índice final não é incluído).' }
         ]
     }},
-    { id:'visualizando', title:'Visualizando o conceito', type:'diagram', data:{
-        intro:null,
-        diagram:'"Python"\n   ↓\nP  y  t  h  o  n\n0  1  2  3  4  5     ← índices\n\ntexto[0]     →  "P"\ntexto[5]     →  "n"\ntexto[0:3]   →  "Pyt"    (do índice 0 até o 2, o 3 não entra)\ntexto[2:]    →  "thon"   (do índice 2 até o final)\ntexto[:2]    →  "Py"     (do início até o índice 1, o 2 não entra)',
-        note:null
+    { id:'visualizando', title:'Visualizando o conceito', type:'execflow', data:{
+        titulo:'Acessando um caractere por índice',
+        intro:'Uma string é uma sequência de caracteres numerados, sempre a partir de 0. Veja o programa acessando um caractere específico, passo a passo.',
+        arquivo:'main.py',
+        entrada:[ { label:'nome', value:'"Python"' } ],
+        ruler:{ text:'Python', highlightIndex:0 },
+        codigo:[
+          { code:'nome = "Python"' },
+          { code:'' },
+          { code:'print(nome[0])', key:'print' }
+        ],
+        saida:{ texto:'P', activeKey:'print' },
+        captions:{
+          entrada:'a string guardada, com cada caractere numerado',
+          processamento:'nome[0] busca o caractere na posição 0',
+          saida:'o caractere encontrado no índice 0'
+        },
+        como:[
+          { t:'Índice —', d:'a posição de um caractere dentro da string, sempre contada a partir de 0.' },
+          { t:'nome[0] —', d:'acessa o caractere na posição 0 (o primeiro).' },
+          { t:'Fatiamento —', d:'nome[0:3] pega um pedaço da string, do índice 0 até o 2 (o 3 não entra).' }
+        ],
+        note:'Outros acessos com a mesma string: nome[5] devolve "n" (o último caractere); nome[0:3] devolve "Pyt"; nome[2:] devolve "thon" (do índice 2 até o final); nome[:2] devolve "Py" (do início até o índice 1).'
     }},
     { id:'exemplo', title:'Primeiro exemplo', type:'example', data:{
         intro:null,
@@ -2175,10 +2204,29 @@ const MODULES = [
           { term:'input()', def:'função que pausa o programa, exibe uma mensagem (opcional) e espera o usuário digitar algo e pressionar Enter', example:'o valor digitado é devolvido pela função, sempre como uma string (str).' }
         ]
     }},
-    { id:'visualizando', title:'Visualizando o conceito', type:'diagram', data:{
-        intro:null,
-        diagram:'input("Digite sua idade: ")\n        ↓\nTela exibe: Digite sua idade:\n        ↓\nUsuário digita: 20\n        ↓\nUsuário pressiona Enter\n        ↓\ninput() devolve: "20"     ← ainda é texto! (str)\n        ↓\nidade = "20"',
-        note:null
+    { id:'visualizando', title:'Visualizando o conceito', type:'execflow', data:{
+        titulo:'Recebendo um valor digitado',
+        intro:'input() pausa o programa, exibe uma mensagem e espera a pessoa digitar algo e apertar Enter. Veja o programa executando, passo a passo, supondo que alguém digite "Rafael".',
+        arquivo:'main.py',
+        entrada:[ { label:'resposta digitada', value:'"Rafael"' } ],
+        codigo:[
+          { code:'nome = input("Digite seu nome: ")', key:'input' },
+          { code:'' },
+          { code:'print(nome)', key:'print' }
+        ],
+        calc:{ activeKey:'input' },
+        saida:{ texto:'Rafael', activeKey:'print' },
+        captions:{
+          entrada:'o que a pessoa digita no teclado',
+          processamento:'o programa pausa, espera o Enter e guarda o texto digitado em nome',
+          saida:'o valor que foi digitado'
+        },
+        como:[
+          { t:'input() —', d:'pausa o programa, mostra a mensagem entre parênteses e espera o Enter.' },
+          { t:'Sempre str —', d:'não importa o que for digitado, input() sempre devolve um texto (string).' },
+          { t:'nome = input(...) —', d:'guarda o texto digitado na variável, para usar depois no programa.' }
+        ],
+        note:'Isso já mostra um problema: idade = input("Digite sua idade: ") guarda "20" como texto, não como número — mesmo que a pessoa só tenha digitado dígitos. Tentar somar esse valor diretamente com um número dá erro. A solução (converter o valor) é o assunto do próximo capítulo.'
     }},
     { id:'exemplo', title:'Primeiro exemplo', type:'example', data:{
         intro:'Neste app, input() abre uma caixa de diálogo do navegador simulando o terminal — digite algo e clique em OK.',
@@ -2310,10 +2358,31 @@ const MODULES = [
           { term:'conversão de tipo', def:'transformar um valor de um tipo em outro tipo equivalente', example:'transformar o texto "20" no número inteiro 20, usando int("20").' }
         ]
     }},
-    { id:'visualizando', title:'Visualizando o conceito', type:'diagram', data:{
-        intro:null,
-        diagram:'Usuário digita 17\n        ↓\ninput()\n        ↓\n"17"          ← ainda é texto (str)\n        ↓\nint("17")\n        ↓\n17            ← agora é número (int)\n        ↓\nidade = 17\n        ↓\nidade + 5\n        ↓\n22',
-        note:null
+    { id:'visualizando', title:'Visualizando o conceito', type:'execflow', data:{
+        titulo:'Convertendo um texto para número',
+        intro:'int(), float(), str() e bool() convertem um valor de um tipo para outro. Veja um texto sendo convertido para número inteiro, passo a passo.',
+        arquivo:'main.py',
+        entrada:[ { label:'texto', value:'"20"' } ],
+        codigo:[
+          { code:'texto = "20"' },
+          { code:'' },
+          { code:'numero = int(texto)', key:'calc' },
+          { code:'' },
+          { code:'print(numero)', key:'print' }
+        ],
+        calc:{ label:'numero =', expr:'int("20")', result:'20', activeKey:'calc' },
+        saida:{ texto:'20', activeKey:'print' },
+        captions:{
+          entrada:'o valor ainda como texto (str)',
+          processamento:'int() converte o texto para número inteiro',
+          saida:'o valor já convertido, agora um número de verdade'
+        },
+        como:[
+          { t:'int() —', d:'converte para número inteiro.' },
+          { t:'float(), str(), bool() —', d:'convertem para número decimal, texto e booleano.' },
+          { t:'Por que importa —', d:'input() sempre devolve str; para somar com um número, é preciso converter primeiro.' }
+        ],
+        note:'É assim que se resolve o problema do capítulo anterior: idade = int(input("Digite sua idade: ")) já converte o valor assim que ele é recebido, permitindo somá-lo com outros números em seguida — por exemplo, idade + 5.'
     }},
     { id:'exemplo', title:'Primeiro exemplo', type:'example', data:{
         intro:null,
@@ -2450,10 +2519,28 @@ const MODULES = [
           { term:'f-string', def:'uma string especial, escrita com um f antes das aspas, que permite inserir o valor de variáveis diretamente dentro do texto, usando chaves {}', example:'f"Olá, {nome}!".' }
         ]
     }},
-    { id:'visualizando', title:'Visualizando o conceito', type:'diagram', data:{
-        intro:null,
-        diagram:'nome = "Ana"\nidade = 16\n\nf"Olá, {nome}! Você tem {idade} anos."\n        ↓\nPython substitui {nome} pelo valor de nome  → "Ana"\nPython substitui {idade} pelo valor de idade → 16\n        ↓\n"Olá, Ana! Você tem 16 anos."',
-        note:null
+    { id:'visualizando', title:'Visualizando o conceito', type:'execflow', data:{
+        titulo:'Combinando texto e variáveis com f-string',
+        intro:'Tudo que está dentro de chaves {} em uma f-string é código Python de verdade — o Python substitui pelo valor correspondente. Veja isso acontecendo, passo a passo.',
+        arquivo:'main.py',
+        entrada:[ { label:'nome', value:'"Ana"' } ],
+        codigo:[
+          { code:'nome = "Ana"' },
+          { code:'' },
+          { code:'print(f"Olá, {nome}!")', key:'print' }
+        ],
+        saida:{ texto:'Olá, Ana!', activeKey:'print' },
+        captions:{
+          entrada:'o valor que vai entrar na mensagem',
+          processamento:'o Python substitui {nome} pelo valor atual da variável',
+          saida:'a mensagem final, já com o valor inserido'
+        },
+        como:[
+          { t:'f antes das aspas —', d:'transforma a string em uma f-string.' },
+          { t:'{nome} —', d:'tudo dentro de chaves é código Python de verdade — geralmente o nome de uma variável.' },
+          { t:'Vantagem —', d:'mais legível do que juntar textos usando + ou várias vírgulas em print().' }
+        ],
+        note:'print() também aceita vários valores separados por vírgula, exibidos com um espaço entre eles: print("Idade:", 18). Com uma f-string, o mesmo resultado fica mais legível: print(f"Idade: {idade}"). É possível combinar várias variáveis na mesma f-string, como em f"Olá, {nome}! Você tem {idade} anos."'
     }},
     { id:'exemplo', title:'Primeiro exemplo', type:'example', data:{
         intro:null,
@@ -2663,10 +2750,29 @@ const MODULES = [
         glossary: [],
         callout:'NÃO CONFUNDA: = versus ==: = é o operador de <b>atribuição</b>, usado para guardar um valor em uma variável (idade = 18). == é o operador de <b>comparação de igualdade</b>, usado para perguntar "esse valor é igual a esse outro?" (idade == 18). Confundir os dois é um dos erros mais comuns entre iniciantes em qualquer linguagem de programação.'
     }},
-    { id:'visualizando', title:'Visualizando o conceito', type:'diagram', data:{
-        intro:null,
-        diagram:'idade = 18\n        ↓\nidade == 18\n        ↓\nPython compara o valor de idade (18) com 18\n        ↓\nSão iguais?  →  Sim\n        ↓\nTrue\n\n\nidade = 15\n        ↓\nidade >= 18\n        ↓\nPython compara o valor de idade (15) com 18\n        ↓\n15 é maior ou igual a 18?  →  Não\n        ↓\nFalse',
-        note:null
+    { id:'visualizando', title:'Visualizando o conceito', type:'execflow', data:{
+        titulo:'Comparando dois valores',
+        intro:'Toda comparação em Python resulta em um valor booleano: True ou False. Veja uma comparação sendo resolvida, passo a passo.',
+        arquivo:'main.py',
+        entrada:[ { label:'idade', value:'18' } ],
+        codigo:[
+          { code:'idade = 18' },
+          { code:'' },
+          { code:'print(idade == 18)', key:'print' }
+        ],
+        calc:{ expr:'18 == 18', result:'True', activeKey:'print' },
+        saida:{ texto:'True' },
+        captions:{
+          entrada:'o valor guardado',
+          processamento:'o Python compara os dois valores',
+          saida:'o resultado, sempre um booleano'
+        },
+        como:[
+          { t:'== —', d:'compara igualdade. Não confundir com = (atribuição): idade = 18 guarda um valor; idade == 18 pergunta se são iguais.' },
+          { t:'!=, >, <, >=, <= —', d:'os outros cinco operadores de comparação.' },
+          { t:'Resultado —', d:'toda comparação devolve sempre True ou False.' }
+        ],
+        note:'Outro exemplo: se idade fosse 15, a comparação idade >= 18 (15 é maior ou igual a 18?) resultaria em False.'
     }},
     { id:'exemplo', title:'Primeiro exemplo', type:'example', data:{
         intro:null,
@@ -2801,9 +2907,28 @@ const MODULES = [
         ],
         callout:'NÃO CONFUNDA: bool versus str: True e False (sem aspas) são valores do tipo bool. Já "True" e "False" (com aspas) são apenas textos comuns, do tipo str, e <b>não</b> funcionam da mesma forma em comparações ou decisões. print(True == "True") resulta em False — tipos diferentes.'
     }},
-    { id:'visualizando', title:'Visualizando o conceito', type:'diagram', data:{
-        intro:null,
-        diagram:'bool\n  │\n  ├── True   (verdadeiro)\n  └── False  (falso)\n\n10 == 10   →  True\n10 == 5    →  False\n\nesta_ativo = True\n        ↓\nesta_ativo é um valor do tipo bool',
+    { id:'visualizando', title:'Visualizando o conceito', type:'execflow', data:{
+        titulo:'Guardando um valor booleano',
+        intro:'O tipo bool tem só dois valores possíveis: True e False, sempre sem aspas. Veja um valor booleano sendo guardado e exibido, passo a passo.',
+        arquivo:'main.py',
+        entrada:[ { label:'esta_chovendo', value:'True' } ],
+        codigo:[
+          { code:'esta_chovendo = True', key:'assign' },
+          { code:'' },
+          { code:'print(esta_chovendo)', key:'print' }
+        ],
+        calc:{ activeKey:'assign' },
+        saida:{ texto:'True', activeKey:'print' },
+        captions:{
+          entrada:'o valor booleano, sem aspas',
+          processamento:'o Python guarda o valor True — não é texto, é do tipo bool',
+          saida:'o valor atual da variável'
+        },
+        como:[
+          { t:'bool —', d:'tem só dois valores possíveis: True e False, sempre com maiúscula e sem aspas.' },
+          { t:'De onde vêm —', d:'toda comparação (Capítulo 12), como 10 == 10, já produz um valor booleano automaticamente.' },
+          { t:'Cuidado —', d:'"True" com aspas é uma string comum — diferente do valor booleano True.' }
+        ],
         note:null
     }},
     { id:'exemplo', title:'Primeiro exemplo', type:'example', data:{
@@ -10351,6 +10476,20 @@ function renderExecFlow(body, mod, screen) {
     entradaBlock.appendChild(row);
     return row;
   });
+  const rulerEls = [];
+  if (d.ruler && d.ruler.text) {
+    const ruler = el('div','ef-ruler');
+    const charsRow = el('div','ef-ruler-row');
+    const idxRow = el('div','ef-ruler-row');
+    [...d.ruler.text].forEach((ch, i) => {
+      const cSpan = el('span','ef-rchar', esc(ch));
+      charsRow.appendChild(cSpan);
+      rulerEls.push(cSpan);
+      idxRow.appendChild(el('span','ef-ridx', String(i)));
+    });
+    ruler.appendChild(charsRow); ruler.appendChild(idxRow);
+    entradaBlock.appendChild(ruler);
+  }
   if (d.captions && d.captions.entrada) entradaBlock.appendChild(el('div','ef-caption', esc(d.captions.entrada)));
   main.appendChild(entradaBlock);
   main.appendChild(el('div','ef-arrow','↓'));
@@ -10442,6 +10581,9 @@ function renderExecFlow(body, mod, screen) {
   }
   if (d.saida) {
     if (d.saida.activeKey && lineEls[d.saida.activeKey]) actions.push(() => lineEls[d.saida.activeKey].classList.add('active'));
+    if (d.ruler && d.ruler.highlightIndex != null && rulerEls[d.ruler.highlightIndex]) {
+      actions.push(() => rulerEls[d.ruler.highlightIndex].classList.add('hit'));
+    }
     actions.push(() => {
       term.querySelector('.out').textContent = ' ' + d.saida.texto;
       if (d.saida.activeKey && lineEls[d.saida.activeKey]) {
@@ -10458,6 +10600,7 @@ function renderExecFlow(body, mod, screen) {
     n = Math.max(-1, Math.min(n, total-1));
     if (n === cur) return;
     entradaKvs.forEach(r => r.classList.remove('shown'));
+    rulerEls.forEach(r => r.classList.remove('hit'));
     Object.keys(lineEls).forEach(k => { lineEls[k].classList.remove('active'); lineEls[k].classList.remove('computed'); });
     if (calcEl) { calcEl.classList.remove('shown'); calcEl.querySelector('.expr').innerHTML = ''; }
     term.querySelector('.out').textContent = '';
