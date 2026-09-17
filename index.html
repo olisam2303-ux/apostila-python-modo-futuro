@@ -326,6 +326,8 @@ ul.plain li, ol.plain li { margin-bottom: 6px; }
   box-shadow: var(--shadow-sm);
 }
 .diagram-video { width: 100%; max-height: 42vh; display: block; background: #000; }
+.embed-frame-wrap { border-radius: 12px; overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 16px; background: #0F0F0F; }
+.embed-frame { width: 100%; border: 0; display: block; }
 
 /* ---- execflow: entrada / editor de código / saída, animado ---- */
 .execflow .ef-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
@@ -938,34 +940,10 @@ const MODULES = [
           { term:'interpretador', def:'um programa que lê o código-fonte, linha por linha, e manda o computador executar cada instrução', example:'quando você "roda" um arquivo Python, é o interpretador do Python que está fazendo esse trabalho.' }
         ]
     }},
-    { id:'visualizando', title:'Visualizando o conceito', type:'execflow', data:{
-        titulo:'Calculadora de troco — passo a passo',
-        intro:'Praticamente todo programa de computador segue o mesmo esquema geral: ele recebe alguma informação, faz algo com essa informação, e devolve um resultado. Clique em "Reproduzir" (ou em "Próximo") para ver o programa executando, uma etapa de cada vez.',
-        arquivo:'main.py',
-        entrada:[
-          { label:'valor_compra', value:'R$ 18,50' },
-          { label:'valor_pago', value:'R$ 20,00' }
-        ],
-        codigo:[
-          { code:'valor_compra = 18.50' },
-          { code:'valor_pago = 20.00' },
-          { code:'' },
-          { code:'troco = valor_pago - valor_compra', key:'calc' },
-          { code:'' },
-          { code:'print(f"Seu troco é R$ {troco:.2f}")', key:'print' }
-        ],
-        calc:{ label:'troco =', expr:'20,00 - 18,50', result:'1,50', activeKey:'calc' },
-        saida:{ texto:'Seu troco é R$ 1,50', activeKey:'print' },
-        captions:{
-          entrada:'valores que vêm de fora do programa',
-          processamento:'aqui o cálculo acontece',
-          saida:'o que a pessoa usuária vê no final'
-        },
-        como:[
-          { t:'Entrada —', d:'é o que entra no programa. Sempre vem de fora (do teclado, de um arquivo, ou já definido no código).' },
-          { t:'Processamento —', d:'é o cálculo ou a decisão. É aqui que o programa "pensa".' },
-          { t:'Saída —', d:'é o resultado que o programa mostra ou produz no final.' }
-        ],
+    { id:'visualizando', title:'Visualizando o conceito', type:'iframe', data:{
+        intro:'Praticamente todo programa de computador segue o mesmo esquema geral: ele recebe alguma informação, faz algo com essa informação, e devolve um resultado.',
+        src:'animations/cap1-entrada-processamento-saida.html',
+        height:580,
         note:'Repare que existe uma ordem clara: primeiro recebemos os dados, depois calculamos, só então mostramos o resultado. Todo programa desta apostila seguirá essa mesma lógica.'
     }},
     { id:'exemplo', title:'Primeiro exemplo', type:'example', data:{
@@ -10421,7 +10399,7 @@ function renderScreen(mod, screen) {
     resultmod: renderResultMod, errors: renderErrors, guided: renderGuided,
     exercises: renderExercises, summary: renderSummary, checklist: renderChecklist,
     quiz: renderQuiz, refs: renderRefs, table: renderTable, list: renderList, qa: renderQa,
-    execflow: renderExecFlow
+    execflow: renderExecFlow, iframe: renderIframeEmbed
   };
   (renderers[screen.type] || function(){})(body, mod, screen);
   wireCodeRunner(body);
@@ -10497,6 +10475,22 @@ function pyHighlight(line) {
   }
   out += esc(line.slice(last));
   return out;
+}
+/* Animação pronta (gerada externamente, ex.: Meta IA), embutida via iframe.
+   Auto-contida: sem dependência do motor de sintaxe/passos do execflow. */
+function renderIframeEmbed(body, mod, screen) {
+  const d = screen.data;
+  if (d.intro) body.appendChild(el('div','card', '<p>'+esc(d.intro)+'</p>'));
+  const wrap = el('div','embed-frame-wrap');
+  const frame = document.createElement('iframe');
+  frame.className = 'embed-frame';
+  frame.src = d.src;
+  frame.style.height = (d.height || 580) + 'px';
+  frame.setAttribute('loading', 'lazy');
+  frame.setAttribute('title', screen.title);
+  wrap.appendChild(frame);
+  body.appendChild(wrap);
+  if (d.note) body.appendChild(el('p','', esc(d.note)));
 }
 function renderExecFlow(body, mod, screen) {
   const d = screen.data;
