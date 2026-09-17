@@ -1562,9 +1562,28 @@ const MODULES = [
         ],
         callout:'NÃO CONFUNDA: em Python, = não é o símbolo de igualdade matemática. idade = 18 não está "comparando" idade com 18 — está <b>guardando</b> o valor 18 na variável idade. Comparação de igualdade usa um símbolo diferente (==), estudado no Capítulo 12.'
     }},
-    { id:'visualizando', title:'Visualizando o conceito', type:'diagram', data:{
-        intro:'Uma forma inicial (e simplificada) de imaginar uma variável é como uma caixa com uma etiqueta, guardando um valor dentro:',
-        diagram:'┌─────────────┐\n│   idade     │  ← etiqueta (nome da variável)\n│             │\n│     18      │  ← valor guardado\n└─────────────┘\n\nCódigo correspondente:\n   idade = 18',
+    { id:'visualizando', title:'Visualizando o conceito', type:'execflow', data:{
+        titulo:'Guardando um valor em uma variável',
+        intro:'Uma forma inicial (e simplificada) de imaginar uma variável é como uma caixa com uma etiqueta, guardando um valor dentro. Veja o programa executando, passo a passo.',
+        arquivo:'main.py',
+        entrada:[ { label:'idade', value:'18' } ],
+        codigo:[
+          { code:'idade = 18', key:'assign' },
+          { code:'' },
+          { code:'print(idade)', key:'print' }
+        ],
+        calc:{ activeKey:'assign' },
+        saida:{ texto:'18', activeKey:'print' },
+        captions:{
+          entrada:'o valor que vai ser guardado',
+          processamento:'o Python cria o valor e associa o nome idade a ele (a "caixa com etiqueta")',
+          saida:'o valor atual guardado em idade'
+        },
+        como:[
+          { t:'idade = 18 —', d:'cria a variável e guarda o valor 18 nela.' },
+          { t:'print(idade) —', d:'sem aspas: o Python busca o valor guardado na variável, não o nome dela.' },
+          { t:'Repare —', d:'o valor de uma variável pode ser trocado a qualquer momento com uma nova atribuição.' }
+        ],
         note:null,
         extra:'Essa imagem de "caixa" é útil para começar, mas não é tecnicamente exata. Na prática, o Python cria o valor 18 na memória do computador, e o nome idade funciona como uma <b>referência</b> que aponta para esse valor — mais parecido com uma etiqueta colada em um objeto do que com uma caixa que guarda uma cópia dele. Essa distinção fica mais importante ao trabalharmos com listas (Capítulo 25), mas por enquanto a ideia de "guardar um valor com um nome" já é suficiente para programar corretamente.'
     }},
@@ -1702,10 +1721,28 @@ const MODULES = [
           { term:'tipo de dado', def:'a categoria de um valor, que determina como ele pode ser usado', example:'18 é um número inteiro; "Ana" é um texto.' }
         ]
     }},
-    { id:'visualizando', title:'Visualizando o conceito', type:'diagram', data:{
-        intro:null,
-        diagram:'18        →  int    (número inteiro)\n1.5       →  float  (número com casas decimais)\n"Ana"     →  str    (texto)\nTrue      →  bool   (verdadeiro/falso)\n\ntype(18)     →  <class \'int\'>\ntype(1.5)    →  <class \'float\'>\ntype("Ana")  →  <class \'str\'>\ntype(True)   →  <class \'bool\'>',
-        note:null
+    { id:'visualizando', title:'Visualizando o conceito', type:'execflow', data:{
+        titulo:'Descobrindo o tipo de um valor',
+        intro:'Todo valor em Python tem um tipo. A função type() descobre qual é. Veja o programa executando, passo a passo.',
+        arquivo:'main.py',
+        entrada:[ { label:'idade', value:'18' } ],
+        codigo:[
+          { code:'idade = 18' },
+          { code:'' },
+          { code:'print(type(idade))', key:'print' }
+        ],
+        saida:{ texto:"<class 'int'>", activeKey:'print' },
+        captions:{
+          entrada:'um número inteiro',
+          processamento:'type() verifica o tipo do valor guardado em idade',
+          saida:'o Python informa que idade é do tipo int (inteiro)'
+        },
+        como:[
+          { t:'type(idade) —', d:'recebe um valor e devolve o tipo dele (int, float, str, bool...).' },
+          { t:'int —', d:'número inteiro, sem casas decimais.' },
+          { t:'A palavra "class" —', d:'aparece porque, por trás dos panos, todo tipo em Python é uma classe (Capítulo 48).' }
+        ],
+        note:'Os quatro tipos básicos que você vai usar o tempo todo: int (número inteiro, como 18), float (número com casas decimais, como 1.5), str (texto, como "Ana") e bool (verdadeiro ou falso, como True).'
     }},
     { id:'exemplo', title:'Primeiro exemplo', type:'example', data:{
         intro:null,
@@ -1838,10 +1875,32 @@ const MODULES = [
           { term:'operador', def:'um símbolo que representa uma operação a ser realizada sobre um ou mais valores', example:'+ é o operador de adição.' }
         ]
     }},
-    { id:'visualizando', title:'Visualizando o conceito', type:'diagram', data:{
-        intro:'Assim como na matemática tradicional, o Python resolve operações misturadas seguindo uma ordem de precedência: multiplicação, divisão, divisão inteira e módulo são resolvidos antes de adição e subtração. Parênteses forçam uma ordem diferente.',
-        diagram:'7 dividido por 2:\n\n   7 ÷ 2 = 3, e sobra 1\n\n   7 // 2  →  3   (quantas vezes o 2 "cabe" inteiro dentro do 7)\n   7 %  2  →  1   (o que sobra depois dessas 3 vezes)\n   7 /  2  →  3.5 (divisão normal, com casas decimais)\n\n\n2 + 3 * 4\n      ↓        (multiplicação primeiro)\n2 + 12\n      ↓\n14\n\n(2 + 3) * 4\n      ↓        (parênteses primeiro)\n5 * 4\n      ↓\n20',
-        note:null
+    { id:'visualizando', title:'Visualizando o conceito', type:'execflow', data:{
+        titulo:'Calculando e guardando um resultado',
+        intro:'Assim como na matemática tradicional, o Python resolve operações misturadas seguindo uma ordem de precedência: multiplicação, divisão, divisão inteira e módulo são resolvidos antes de adição e subtração. Veja um cálculo simples sendo executado, passo a passo.',
+        arquivo:'main.py',
+        entrada:[
+          { label:'valor 1', value:'5' },
+          { label:'valor 2', value:'2' }
+        ],
+        codigo:[
+          { code:'resultado = 5 + 2', key:'calc' },
+          { code:'' },
+          { code:'print(resultado)', key:'print' }
+        ],
+        calc:{ label:'resultado =', expr:'5 + 2', result:'7', activeKey:'calc' },
+        saida:{ texto:'7', activeKey:'print' },
+        captions:{
+          entrada:'os dois números que vão ser somados',
+          processamento:'o Python resolve a operação e guarda o resultado',
+          saida:'o valor guardado em resultado'
+        },
+        como:[
+          { t:'Entrada —', d:'os valores usados no cálculo (aqui, já definidos no código).' },
+          { t:'Processamento —', d:'a operação matemática. Em expressões misturadas, multiplicação e divisão vêm antes de soma e subtração; parênteses forçam outra ordem.' },
+          { t:'Saída —', d:'o resultado, guardado em uma variável e depois exibido.' }
+        ],
+        note:'Vale lembrar as três formas de "dividir" em Python: 7 / 2 é a divisão normal, com casas decimais, e dá 3.5; 7 // 2 é a divisão inteira, que dá só a parte inteira do resultado, 3; e 7 % 2 é o módulo (o resto da divisão), que dá 1. Sobre precedência: em 2 + 3 * 4, a multiplicação é resolvida primeiro (3 * 4 = 12), depois a soma (2 + 12 = 14). Já em (2 + 3) * 4, os parênteses forçam a soma a ser resolvida primeiro (2 + 3 = 5), depois a multiplicação (5 * 4 = 20).'
     }},
     { id:'exemplo', title:'Primeiro exemplo', type:'example', data:{
         intro:null,
@@ -10313,7 +10372,7 @@ function renderExecFlow(body, mod, screen) {
   editor.appendChild(codePre);
   procBlock.appendChild(editor);
   let calcEl = null;
-  if (d.calc) {
+  if (d.calc && d.calc.expr) {
     calcEl = el('div','ef-calc');
     calcEl.innerHTML = '<span class="expr"></span>';
     procBlock.appendChild(calcEl);
@@ -10353,24 +10412,33 @@ function renderExecFlow(body, mod, screen) {
 
   body.appendChild(card);
   if (d.note) body.appendChild(el('p','', esc(d.note)));
+  if (d.extra) body.appendChild(el('div','callout', '🧠 '+d.extra));
 
   // ---- sequência de passos (derivada automaticamente dos dados) ----
   const actions = [];
   entradaKvs.forEach(row => actions.push(() => row.classList.add('shown')));
   if (d.calc) {
     if (d.calc.activeKey && lineEls[d.calc.activeKey]) actions.push(() => lineEls[d.calc.activeKey].classList.add('active'));
-    actions.push(() => {
-      calcEl.classList.add('shown');
-      calcEl.querySelector('.expr').textContent = (d.calc.label ? d.calc.label+' ' : '') + d.calc.expr;
-    });
-    actions.push(() => {
-      calcEl.querySelector('.expr').innerHTML =
-        esc((d.calc.label ? d.calc.label+' ' : '') + d.calc.expr) + ' <span class="eqarrow">→</span> <span class="res">' + esc(d.calc.result) + '</span>';
-      if (d.calc.activeKey && lineEls[d.calc.activeKey]) {
+    if (d.calc.expr) {
+      actions.push(() => {
+        calcEl.classList.add('shown');
+        calcEl.querySelector('.expr').textContent = (d.calc.label ? d.calc.label+' ' : '') + d.calc.expr;
+      });
+      actions.push(() => {
+        calcEl.querySelector('.expr').innerHTML =
+          esc((d.calc.label ? d.calc.label+' ' : '') + d.calc.expr) + ' <span class="eqarrow">→</span> <span class="res">' + esc(d.calc.result) + '</span>';
+        if (d.calc.activeKey && lineEls[d.calc.activeKey]) {
+          lineEls[d.calc.activeKey].classList.remove('active');
+          lineEls[d.calc.activeKey].classList.add('computed');
+        }
+      });
+    } else if (d.calc.activeKey && lineEls[d.calc.activeKey]) {
+      // sem expressão a mostrar (ex.: simples atribuição) — só marca a linha como concluída
+      actions.push(() => {
         lineEls[d.calc.activeKey].classList.remove('active');
         lineEls[d.calc.activeKey].classList.add('computed');
-      }
-    });
+      });
+    }
   }
   if (d.saida) {
     if (d.saida.activeKey && lineEls[d.saida.activeKey]) actions.push(() => lineEls[d.saida.activeKey].classList.add('active'));
