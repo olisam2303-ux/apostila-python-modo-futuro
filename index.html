@@ -347,6 +347,7 @@ ul.plain li, ol.plain li { margin-bottom: 6px; }
 .ef-code .ln { display: block; padding: 1px 6px; margin: 0 -6px; border-radius: 4px; transition: background .25s, box-shadow .25s; }
 .ef-code .ln.active { background: rgba(255,214,10,.16); box-shadow: inset 3px 0 0 #FFD60A; }
 .ef-code .ln.computed { background: rgba(0,255,136,.10); box-shadow: inset 3px 0 0 #00FF88; }
+.ef-code .ln.skipped { opacity: .4; text-decoration: line-through; text-decoration-color: rgba(255,255,255,.3); text-decoration-thickness: 1.5px; }
 .ef-code .kw { color: #c586c0; } .ef-code .str { color: #ce9178; } .ef-code .num { color: #b5cea8; } .ef-code .com { color: #6a7089; font-style: italic; }
 .ef-calc { font-family: var(--mono, "Cascadia Code", Consolas, monospace); font-size: 13px; color: var(--text-dim); margin-top: 8px; opacity: 0; transition: opacity .3s; }
 .ef-calc.shown { opacity: 1; }
@@ -3061,10 +3062,30 @@ const MODULES = [
           { term:'indentação', def:'o espaçamento à esquerda de uma linha de código, usado em Python para indicar que aquela linha faz parte de um bloco', example:'ao contrário de outras linguagens, em Python a indentação não é apenas estética: ela é obrigatória e define a estrutura do programa.' }
         ]
     }},
-    { id:'visualizando', title:'Visualizando o conceito', type:'diagram', data:{
-        intro:null,
-        diagram:'idade = 18\n        ↓\nidade >= 18\n        ↓\n18 >= 18  →  True\n        ↓\nA condição é True, então o bloco do if É executado\n        ↓\nprint("Maior de idade")\n        ↓\nSaída: Maior de idade\n\n\nidade = 15\n        ↓\nidade >= 18\n        ↓\n15 >= 18  →  False\n        ↓\nA condição é False, então o bloco do if é IGNORADO\n        ↓\n(nada é exibido pelo if — o programa segue para a próxima instrução, se houver)',
-        note:null
+    { id:'visualizando', title:'Visualizando o conceito', type:'execflow', data:{
+        titulo:'Tomando uma decisão com if',
+        intro:'if só executa o bloco indentado quando a condição é True. Veja o programa avaliando a condição e decidindo, passo a passo.',
+        arquivo:'main.py',
+        entrada:[ { label:'idade', value:'18' } ],
+        codigo:[
+          { code:'idade = 18' },
+          { code:'' },
+          { code:'if idade >= 18:', key:'cond' },
+          { code:'    print("Maior de idade")', key:'print' }
+        ],
+        calc:{ expr:'18 >= 18', result:'True', activeKey:'cond' },
+        saida:{ texto:'Maior de idade', activeKey:'print' },
+        captions:{
+          entrada:'o valor a ser testado',
+          processamento:'a condição é avaliada; se for True, o bloco indentado roda',
+          saida:'só aparece porque a condição foi True'
+        },
+        como:[
+          { t:'if condição: —', d:'os dois-pontos marcam o início do bloco que só roda se a condição for True.' },
+          { t:'Indentação —', d:'as linhas do bloco ficam deslocadas à direita (geralmente 4 espaços) — em Python, isso é obrigatório, não é só estética.' },
+          { t:'Se fosse False —', d:'o bloco indentado seria simplesmente ignorado, e o programa seguiria para a próxima instrução (se houver).' }
+        ],
+        note:'Com idade = 15, a condição idade >= 18 seria False: o bloco indentado não rodaria, e nada seria exibido por este if — o programa seguiria direto para a próxima instrução, se houver.'
     }},
     { id:'exemplo', title:'Primeiro exemplo', type:'example', data:{
         intro:null,
@@ -3197,10 +3218,33 @@ const MODULES = [
           { term:'else', def:'bloco de código executado quando a condição do if correspondente é False', example:'sempre vem logo após o bloco do if, sem nenhuma condição própria.' }
         ]
     }},
-    { id:'visualizando', title:'Visualizando o conceito', type:'diagram', data:{
-        intro:null,
-        diagram:'idade = 15\n        ↓\nidade >= 18 ?\n        ↓\n   ┌────┴────┐\n  True      False\n   │          │\nBloco do if   Bloco do else\n   │          │\n"Maior de     "Menor de\n idade"        idade"\n\n\nFLUXOGRAMA TEXTUAL:\n\n           ┌───────────────┐\n           │ idade >= 18 ?  │\n           └───────┬────────┘\n              Sim  │  Não\n        ┌──────────┴──────────┐\n        ▼                     ▼\n"Maior de idade"      "Menor de idade"',
-        note:null
+    { id:'visualizando', title:'Visualizando o conceito', type:'execflow', data:{
+        titulo:'Escolhendo entre dois caminhos com else',
+        intro:'else executa quando a condição do if é False. Veja o programa escolhendo o caminho certo, passo a passo — o bloco não escolhido fica riscado.',
+        arquivo:'main.py',
+        entrada:[ { label:'idade', value:'15' } ],
+        codigo:[
+          { code:'idade = 15' },
+          { code:'' },
+          { code:'if idade >= 18:', key:'cond' },
+          { code:'    print("Maior de idade")', key:'ifprint' },
+          { code:'else:' },
+          { code:'    print("Menor de idade")', key:'elseprint' }
+        ],
+        calc:{ expr:'15 >= 18', result:'False', activeKey:'cond' },
+        branch:{ taken:'else', branches:{ if:['ifprint'], else:['elseprint'] } },
+        saida:{ texto:'Menor de idade', activeKey:'elseprint' },
+        captions:{
+          entrada:'o valor a ser testado',
+          processamento:'a condição é avaliada; o bloco do if OU o do else roda — nunca os dois',
+          saida:'o resultado do caminho escolhido (else, porque a condição foi False)'
+        },
+        como:[
+          { t:'if / else —', d:'exatamente um dos dois blocos roda: o do if quando a condição é True, o do else quando é False.' },
+          { t:'Nunca os dois —', d:'ao contrário de dois if separados, aqui os caminhos são mutuamente exclusivos.' },
+          { t:'else não tem condição —', d:'ele é o caminho "para todo o resto" — o que sobra quando o if não vale.' }
+        ],
+        note:'Se idade fosse 18 ou mais, a condição seria True: o bloco do if rodaria ("Maior de idade") e o bloco do else é que ficaria riscado.'
     }},
     { id:'exemplo', title:'Primeiro exemplo', type:'example', data:{
         intro:null,
@@ -10579,6 +10623,17 @@ function renderExecFlow(body, mod, screen) {
       });
     }
   }
+  // if/else, if/elif/else: depois que a condição é avaliada, marca como
+  // "pulado" (riscado) o(s) bloco(s) que NÃO foram escolhidos.
+  if (d.branch) {
+    actions.push(() => {
+      const taken = d.branch.taken;
+      Object.keys(d.branch.branches || {}).forEach(name => {
+        if (name === taken) return;
+        (d.branch.branches[name] || []).forEach(k => { if (lineEls[k]) lineEls[k].classList.add('skipped'); });
+      });
+    });
+  }
   if (d.saida) {
     if (d.saida.activeKey && lineEls[d.saida.activeKey]) actions.push(() => lineEls[d.saida.activeKey].classList.add('active'));
     if (d.ruler && d.ruler.highlightIndex != null && rulerEls[d.ruler.highlightIndex]) {
@@ -10601,7 +10656,7 @@ function renderExecFlow(body, mod, screen) {
     if (n === cur) return;
     entradaKvs.forEach(r => r.classList.remove('shown'));
     rulerEls.forEach(r => r.classList.remove('hit'));
-    Object.keys(lineEls).forEach(k => { lineEls[k].classList.remove('active'); lineEls[k].classList.remove('computed'); });
+    Object.keys(lineEls).forEach(k => { lineEls[k].classList.remove('active'); lineEls[k].classList.remove('computed'); lineEls[k].classList.remove('skipped'); });
     if (calcEl) { calcEl.classList.remove('shown'); calcEl.querySelector('.expr').innerHTML = ''; }
     term.querySelector('.out').textContent = '';
     for (let i = 0; i <= n; i++) actions[i]();
